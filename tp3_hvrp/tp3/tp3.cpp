@@ -38,17 +38,27 @@ struct Instance {
 	}
 };
 
-struct t_tournee {
-    int n; // nb client
+struct Tournee {
+    int nbClients = 0; // nb client
+    int truck; // le camion (type de camion)
+    int cost;
     int list[CLIENT_TOURNEE]; // clients
-    int c; // le camion (type de camion)
-    int cout;
 };
 
-struct t_solution {
-    int nbTournee; // nombre de tournee
-	t_tournee liste[MAX]; //nombre de camion * types]; // ensemble de tournee
-    int cout; // cout total
+struct Solution {
+    int nbTournee = 0; // nombre de tournee
+    int cost = 0; // cout total
+	Tournee *list; //nombre de camion * types]; // ensemble de tournee
+	Solution(int nbTypes, int* nbTrucksPerTypes) {
+		int nbTrucks = 0;
+		for (int i = 0; i < nbTypes; ++i) {
+			nbTrucks += nbTrucksPerTypes[i];
+		}
+		list = new Tournee[nbTrucks];
+	}
+	~Solution() {
+		delete[] list;
+	}
 };
 
 Instance& readInstance(std::string path) {
@@ -92,11 +102,34 @@ Instance& readInstance(std::string path) {
 	return *instance;
 }
 
+int nextNearNeighbours(Instance& instance, bool *visited, int start) { // plus proche voisin
+	int nearestIndex = -1, nearestValue = INT_MAX;
+	
+	for (int i = 1; i < instance.numberClients + 1; ++i) {
+		
+		if(!visited[i] && i != start && instance.distances[start][i] < nearestValue){
+			nearestIndex = i;
+			nearestValue = instance.distances[start][i];
+		};
+	}
+	return nearestIndex;
+}
 
+void nearNeighbours(Instance& instance, Solution& solution) {
+	int nbClientTotal = 0, nbCurClient = 0, curIndex = 0;
+
+	bool *visited = new bool[instance.numberClients];
+
+	while (nbClientTotal < instance.numberClients) {
+		curIndex = nextNearNeighbours(instance, visited, curIndex);
+		if()
+	}
+}
 
 int main()
 {
 	Instance instance = readInstance("data.txt");
+	Solution *solution = new Solution(instance.truckTypes, instance.trucksPerTypes);
     std::cout << "clients: " << instance.numberClients << "; trucks " << instance.truckTypes << std::endl;
 	std::cout << "d12: " << instance.distances[1][2] << "; capacities[3] " << instance.trucksCapacities[3] << "; quantityPerClient[10] " << instance.quantityPerClient[0] << std::endl;
 
