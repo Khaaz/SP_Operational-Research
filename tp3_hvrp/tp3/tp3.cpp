@@ -40,21 +40,30 @@ struct Instance {
 
 struct Tournee {
     int nbClients = 0; // nb client
+    int cost = 0;
     int truck; // le camion (type de camion)
-    int cost;
-    int list[CLIENT_TOURNEE]; // clients
+    int *list; // clients
+	Tournee(int nbClient = CLIENT_TOURNEE) : nbClients(0) {
+		truck = 0;
+		cost = 0;
+		list = new int[nbClient];
+	}
+	~Tournee() {
+		delete[] list;
+	}
 };
 
 struct Solution {
     int nbTournee = 0; // nombre de tournee
     int cost = 0; // cout total
-	Tournee *list; //nombre de camion * types]; // ensemble de tournee
+	Tournee* *list; //nombre de camion * types]; // ensemble de tournee
 	Solution(int nbTypes, int* nbTrucksPerTypes) {
 		int nbTrucks = 0;
 		for (int i = 0; i < nbTypes; ++i) {
 			nbTrucks += nbTrucksPerTypes[i];
 		}
-		list = new Tournee[nbTrucks];
+		list = new Tournee*[nbTrucks];
+		int cost = 0;
 	}
 	~Solution() {
 		delete[] list;
@@ -102,10 +111,11 @@ Instance& readInstance(std::string path) {
 	return *instance;
 }
 
-int nextNearNeighbours(Instance& instance, bool *visited, int start) { // plus proche voisin
+// plus proche voisins
+int nextNearNeighbour(Instance& instance, bool *visited, int start) { // plus proche voisin
 	int nearestIndex = -1, nearestValue = INT_MAX;
 	
-	for (int i = 1; i < instance.numberClients + 1; ++i) {
+	for (int i = 1; i < instance.numberClients + 1; ++i) { // on commence a 1 pour enlever le depot
 		
 		if(!visited[i] && i != start && instance.distances[start][i] < nearestValue){
 			nearestIndex = i;
@@ -115,33 +125,88 @@ int nextNearNeighbours(Instance& instance, bool *visited, int start) { // plus p
 	return nearestIndex;
 }
 
-void nearNeighbours(Instance& instance, Solution& solution) {
-	int nbClientTotal = 0, nbCurClient = 0, curIndex = 0;
+Tournee& nearNeighbours(Instance& instance, Solution& solution) {
+	int nbCurClient = 0, curIndex = 0, newIndex = 0;
+	Tournee* tournee = new Tournee(instance.numberClients);
 
-	bool *visited = new bool[instance.numberClients];
+	bool* visited = new bool[instance.numberClients]{false};
 
-	while (nbClientTotal < instance.numberClients) {
-		curIndex = nextNearNeighbours(instance, visited, curIndex);
-		if()
+	for (int i = 0; i < instance.numberClients - 1; ++i) {
+		newIndex = nextNearNeighbour(instance, visited, curIndex); // todo return 2 valeurs (aussi la distance)
+		visited[newIndex] = true;
+		tournee->list[tournee->nbClients++] = newIndex;
+		tournee->cost += instance.distances[curIndex][newIndex];
+		curIndex = newIndex;
 	}
+
+	// retour au depot
+	tournee->cost += instance.distances[curIndex][0];
+	tournee->list[tournee->nbClients++] = 0;
+
+	// ajout a la solution
+	solution.cost += tournee->cost;
+	solution.list[solution.nbTournee] = tournee;
+
+	return *tournee;
+}
+
+
+// plus proche voisins random
+int next5NearNeighbours(Instance& instance, bool* visited, int start) { // plus proche voisin
+	int nearestIndexes[5] = { -1, -1, -1, -1, -1 }, nearestValues[5] = {-1, INT_MAX, INT_MAX, INT_MAX, INT_MAX };
+	int randIndex;
+
+	for (int i = 1; i < instance.numberClients + 1; ++i) { // on commence a 1 pour enlever le depot
+
+		if (!visited[i] && i != start && instance.distances[start][i] < nearestValues[4]) {
+			sortedInsert(nearestIndexes, nearestValues, instance.distances[start][i], i);
+		};
+	}
+	randIndex = rand() % 5;
+	return nearestIndexes[randIndex];
+}
+
+void sortedInsert(int *tabValues, int *tabIndexes, int value, int index){
+	int i = 5;
+	while(value < tabValues[i]){
+		i--;
+	}
+	tabValues[5] = tabValues[i+1];
+	tabValues[i + 1] = 2;
+}
+
+Tournee& nearNeighboursRandom(Instance& instance, Solution& solution) {
+	int nbCurClient = 0, curIndex = 0, newIndex = 0;
+	Tournee* tournee = new Tournee(instance.numberClients);
+
+	bool* visited = new bool[instance.numberClients]{ false };
+
+	for (int i = 0; i < instance.numberClients - 1; ++i) {
+		newIndex = next5NearNeighbours(instance, visited, curIndex); // todo return 2 valeurs (aussi la distance)
+		visited[newIndex] = true;
+		tournee->list[tournee->nbClients++] = newIndex;
+		tournee->cost += instance.distances[curIndex][newIndex];
+		curIndex = newIndex;
+	}
+
+	// retour au depot
+	tournee->cost += instance.distances[curIndex][0];
+	tournee->list[tournee->nbClients++] = 0;
+
+	// ajout a la solution
+	solution.cost += tournee->cost;
+	solution.list[solution.nbTournee] = tournee;
+
+	return *tournee;
 }
 
 int main()
 {
-	Instance instance = readInstance("data.txt");
-	Solution *solution = new Solution(instance.truckTypes, instance.trucksPerTypes);
+	Instance& instance = readInstance("data.txt");
+	Solution* solution = new Solution(instance.truckTypes, instance.trucksPerTypes);
     std::cout << "clients: " << instance.numberClients << "; trucks " << instance.truckTypes << std::endl;
-	std::cout << "d12: " << instance.distances[1][2] << "; capacities[3] " << instance.trucksCapacities[3] << "; quantityPerClient[10] " << instance.quantityPerClient[0] << std::endl;
+	std::cout << "d12: " << instance.distances[1][2] << "; capacities[3] " << instance.trucksCapacities[3] << "; quantityPerClient[10] " << instance.quantityPerClient[10] << std::endl;
 
+	nearNeighbours(instance, *solution);
+	std::cout << solution->cost << std::endl;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
