@@ -152,6 +152,18 @@
   <ItemGroup>
     <Text Include="data.txt" />
     <Text Include="data_test.txt" />
+    <Text Include="LA01.txt" />
+    <Text Include="LA02.txt" />
+    <Text Include="LA03.txt" />
+    <Text Include="LA04.txt" />
+    <Text Include="LA05.txt" />
+    <Text Include="LA06.txt" />
+    <Text Include="LA07.txt" />
+    <Text Include="LA08.txt" />
+    <Text Include="LA09.txt" />
+    <Text Include="LA10.txt" />
+    <Text Include="LA15.txt" />
+    <Text Include="LA20.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

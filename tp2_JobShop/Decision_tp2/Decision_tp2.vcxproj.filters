@@ -26,5 +26,41 @@
     <Text Include="data_test.txt">
       <Filter>Resource Files</Filter>
     </Text>
+    <Text Include="LA01.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA02.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA03.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA04.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA05.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA20.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA06.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA07.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA08.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA09.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA10.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
+    <Text Include="LA15.txt">
+      <Filter>Resource Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>
