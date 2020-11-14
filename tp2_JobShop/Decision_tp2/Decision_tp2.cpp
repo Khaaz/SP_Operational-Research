@@ -3,10 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <time.h>
-
-const int TAILLE_MAX = 100;
-const int TAILLE_MAX_N = 50;
-const int TAILLE_MAX_M = 50;
+#include <unordered_set>
 
 /**
 * M:
@@ -71,7 +68,6 @@ struct Vector {
 	int** startingTime; // startingTime[piece][machine] = heure de debut pour cette piece sur cette machine
 	Couple** pere; // pere[piece][machine] = {piece, operation} parente (limitant en temps) de cette piece sur cette machine
 	
-	Vector() : Vector(TAILLE_MAX_N, TAILLE_MAX_M) {}
 	Vector(const Vector& v) : Vector(v.pieces, v.machines) {
 		// memcpy(this->V, v.V, this->size * sizeof(int));
 		for (int i = 0; i < size; ++i) {
@@ -191,7 +187,7 @@ Couple evaluate(Instance& instance, Vector& vector) {
 	int curPiece, prevPiece, curOp, prevOp, curST, prevST, newCurST, curMachine;
 	Couple indexCritic = { 0, 0 };
 	
-	// mp[a][0] = la derniere piece qui a utilisé la machine a; 
+	// mp[a][0] = la derniere piece qui a utilisï¿½ la machine a; 
 	// mp[a][1] = la derniere operation faites sur la machine a; 
 	int **mp = new int*[instance.machines];
 
@@ -233,12 +229,12 @@ Couple evaluate(Instance& instance, Vector& vector) {
 			curST = vector.startingTime[curPiece][curOp]; // st de l'op courante
 			newCurST = prevST + instance.P[prevPiece][prevOp]; // st du pere + duree de l'op
 			
-			// starting time du pere + la durée de son op > starting time de l'op courante
+			// starting time du pere + la durï¿½e de son op > starting time de l'op courante
 			if (newCurST > curST) {
 				vector.startingTime[curPiece][curOp] = newCurST;
 				vector.pere[curPiece][curOp] = { prevPiece, prevOp };
 
-				//Si le starting time de notre piece + le cout de l'opé est sup au cout total
+				//Si le starting time de notre piece + le cout de l'opï¿½ est sup au cout total
 				if(newCurST + instance.P[curPiece][curOp] > vector.cost){
 					vector.cost = newCurST + instance.P[curPiece][curOp];
 					indexCritic = { curPiece, curOp };
@@ -302,7 +298,7 @@ void localSearch(Instance& instance, Vector& vector, int nbMaxIter) {
 
 	// std::cout << "LocalSearch.INITIALCOST = " << vector.cost << std::endl;
 	
-	while(vector.pere[best.piece][best.operation].piece != -1 && curIter < nbMaxIter){ // Tant qu'on est pas au début (tout à gauche) ou au nb max d'iter
+	while(vector.pere[best.piece][best.operation].piece != -1 && curIter < nbMaxIter) { // Tant qu'on est pas au dï¿½but (tout ï¿½ gauche) ou au nb max d'iter
 		newVector = new Vector(vector);
 		sonFather = searchSonAndFather(vector, best.piece, best.operation);
 		
@@ -314,28 +310,46 @@ void localSearch(Instance& instance, Vector& vector, int nbMaxIter) {
 			newVector->V[sonFather.son] = newVector->V[sonFather.father];
 			newVector->V[sonFather.father] = tmp;
 
-			// On réévalue avec notre nouveau vecteur
+			// On rï¿½ï¿½value avec notre nouveau vecteur
 			cur = evaluate(instance, *newVector);
 
-			//Si le nouveau vecteur à un meilleur cout
+			//Si le nouveau vecteur ï¿½ un meilleur cout
 			if (newVector->cost < vector.cost) {
 
 				//Le nouveau remplace l'ancien 
-				vector = *newVector; // TODO check si ca change bien la ref 
-				best = cur; 
+				// on delete pas vector
+				vector = *newVector;
+				best = cur;
 			}
-			// Sinon on passe a la pièce père 
+			// Sinon on passe a la piï¿½ce pï¿½re 
 			else {
 				best = vector.pere[best.piece][best.operation];
+				delete newVector; // on delete mais bon
 			}
 		} 
-		// Sinon on passe a la pièce père 
+		// Sinon on passe a la piï¿½ce pï¿½re 
 		else {
 			best = vector.pere[best.piece][best.operation];
+			delete newVector; // on delete mais bon
 		}
 		++curIter;
 	}
 	// std::cout << "LocalSearch.NEWCOST = " << vector.cost << std::endl;
+}
+
+/**
+ * @brief
+ *
+ * @param arr
+ * @param len
+ * @return long
+ */
+std::string hashFunction(int* arr, int len) {
+	std::string str;
+	for (int i = 0; i < len; ++i) {
+		str.push_back(arr[i] + '0');
+	}
+	return str;
 }
 
 /**
@@ -344,23 +358,51 @@ void localSearch(Instance& instance, Vector& vector, int nbMaxIter) {
  * @param vector 
  * @return Vector 
  */
-Vector* genOneNeighbour(Vector& vector) { // TODO: voisins differents
-	Vector *newV = new Vector(vector);
+Vector* genOneNeighbour(Vector& vector, std::unordered_set<std::string> hashSet) {
 	int tmp;
-	
+	std::string key;
+	Vector *newV = new Vector(vector);
+
+	// Genï¿½re les nombre randoms
 	int rand1 = rand() % vector.size;
 	int rand2 = rand() % vector.size;
 
-	tmp = vector.V[rand1];
-	while (tmp == vector.V[rand2]) {
+	// swap
+	tmp = newV->V[rand1];
+	while (tmp == newV->V[rand2]) { // V[rand1] != V[rand2] (on ne swap pas la meme piece)
 		rand2 = rand() % vector.size;
 	}
 	newV->V[rand1] = newV->V[rand2];
 	newV->V[rand2] = tmp;
+
+	key = hashFunction(newV->V, vector.size);
+
+	//Tant qu'on as pas un voisin qui n'existe pas en regï¿½nï¿½re un nouveau
+	while (hashSet.find(key) != hashSet.end()) {
+		// inverse le swap / reset newV
+		newV->V[rand1] = vector.V[rand1];
+		newV->V[rand2] = vector.V[rand2];
+
+		// Regenere les nombre randoms
+		rand1 = rand() % vector.size;
+		rand2 = rand() % vector.size;
+
+		// swap
+		tmp = newV->V[rand1];
+		while (tmp == newV->V[rand2]) {
+			rand2 = rand() % vector.size;
+		}
+		newV->V[rand1] = newV->V[rand2];
+		newV->V[rand2] = tmp;
+
+		key = hashFunction(newV->V, vector.size);
+	}
+
+	// new unique vector created => add to the set
+	hashSet.insert(key);
 	
 	return newV;
 }
-
 
 /**
  * @brief 
@@ -370,10 +412,11 @@ Vector* genOneNeighbour(Vector& vector) { // TODO: voisins differents
  * @return Vector* 
  */
 Vector** genNeighbours(Vector& vector, int nbNeighbours) {
-	Vector** vectors = new Vector*[nbNeighbours]; // todo fix
-	
+	Vector** vectors = new Vector*[nbNeighbours]; 
+	std::unordered_set<std::string> hashSet;
+
 	for (int i = 0; i < nbNeighbours; ++i) {
-		vectors[i] = genOneNeighbour(vector);
+		vectors[i] = genOneNeighbour(vector, hashSet);
 	}
 	return vectors;
 }
@@ -419,11 +462,10 @@ Vector& grasp(Instance& instance, int nbNeighbours, int iter, int localSearchIte
 	return *bestOfBestVector;
 }
 
-
 int main()
 {
-	//srand(123);
-	Instance& instance = readInstance("LA05.txt");
+	srand(1234);
+	Instance& instance = readInstance("LA20.txt");
 
 	//Vector& vector = generateBierwirth(instance);
 	//std::cout << "BIERWITH: " << std::endl;
@@ -441,8 +483,14 @@ int main()
 	// std::cout << "LOCAL SEARCH COST: " << vector.cost << std::endl;
 	
 	// test grasp
-	Vector& v = grasp(instance, 15, 500, 1000);
-	std::cout << "GRASP.FINALCOST = " << v.cost << std::endl;
+	 Vector& v = grasp(instance, 15, 2000, 1000);
+	 std::cout << "GRASP.FINALCOST = " << v.cost << std::endl;
+	
+	// test hashFunction
+	//std::string hash;
+	//int arr[11] ={0,1,2,2,0,3,1,2,3,3,0};
+	//hash = hashFunction(arr, 11);
+	//std::cout << hash << std::endl;
 
 	// faire varier la seed
 	// faire varier le nombre de voisins
