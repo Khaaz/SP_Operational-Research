@@ -429,9 +429,7 @@ Vector** genNeighbours(Vector& vector, int nbNeighbours) {
  * @param iter 
  * @return Vector& 
  */
-Vector& grasp(Instance& instance, int nbNeighbours, int iter, int localSearchIter) {
-	Vector& vector = generateBierwirth(instance);
-
+Vector& grasp(Instance& instance, Vector &vector, int nbNeighbours, int iter, int localSearchIter) {
 	//global best
 	Vector* bestOfBestVector = nullptr;
 	//local best
@@ -462,12 +460,95 @@ Vector& grasp(Instance& instance, int nbNeighbours, int iter, int localSearchIte
 	return *bestOfBestVector;
 }
 
+/**
+ * @brief
+ *
+ * @param instance
+ * @param nbNeighbours
+ * @param iter
+ * @return Vector&
+ */
+Vector& graspWOLocalSearch(Instance& instance, Vector& vector, int nbNeighbours, int iter, int localSearchIter) {
+	//global best
+	Vector* bestOfBestVector = nullptr;
+	//local best
+	Vector* bestVector = nullptr;
+	//array of neighbours
+	Vector** vectors = nullptr;
+
+	localSearch(instance, vector, localSearchIter);
+
+	bestOfBestVector = &vector;
+	bestVector = &vector;
+
+	for (int i = 0; i < iter; ++i) {
+		vectors = genNeighbours(*bestVector, nbNeighbours);
+
+		for (int i = 0; i < nbNeighbours; ++i) {
+			evaluate(instance, *vectors[i]);
+			if (vectors[i]->cost < bestVector->cost) {
+				bestVector = vectors[i];
+			}
+		}
+
+		if (bestVector->cost < bestOfBestVector->cost) {
+			bestOfBestVector = bestVector;
+		}
+	}
+
+	return *bestOfBestVector;
+}
+
+void resultStudy(int nbSeq){
+
+	int* evalCosts = new int[nbSeq];
+	int* localSearchCosts = new int[nbSeq];
+	int* graspCosts = new int[nbSeq];
+	int* graspWOlsCosts = new int[nbSeq];
+
+	Vector *vectorEvaluate = nullptr, *vectorLocalSearch = nullptr, *vectorGrasp = nullptr, *vectorGraspWOls = nullptr;
+	Instance *instance = nullptr;
+	std::string numInstance;
+
+	for(int i = 1; i <= nbSeq; i++){
+		//Car toutes les instances sont 0i avant 10.
+		numInstance = ((i < 10) ? "0" : "") + std::to_string(i);
+		instance = &(readInstance("LA" + numInstance + ".txt"));
+		
+		vectorEvaluate = &(generateBierwirth(*instance));
+		vectorLocalSearch = new Vector(*vectorEvaluate);
+		vectorGrasp = new Vector(*vectorEvaluate);
+		vectorGraspWOls = new Vector(*vectorEvaluate);
+
+		evaluate(*instance, *vectorEvaluate);
+		evalCosts[i - 1] = vectorEvaluate->cost;
+
+		localSearch(*instance, *vectorLocalSearch, 100);
+		localSearchCosts[i - 1] = vectorLocalSearch->cost;
+
+		vectorGrasp = &(grasp(*instance, *vectorGrasp, 10, 100, 100));
+		graspCosts[i - 1] = vectorGrasp->cost;
+
+		vectorGraspWOls = &(graspWOLocalSearch(*instance, *vectorGraspWOls, 10, 100, 100));
+		graspWOlsCosts[i - 1] = vectorGraspWOls->cost;
+
+	}	
+
+	for(int i = 0; i < nbSeq; i++){
+		std::cout << "LA0" << i + 1 << std::endl;
+		std::cout << "Eval : " << evalCosts[i] << " || Local Search : " << localSearchCosts[i] << std::endl;
+		std::cout << "GRASP w/o LS: " << graspWOlsCosts[i] << " || GRASP LS: " << graspCosts[i] << std::endl;
+		std::cout << std::endl;
+	}
+
+}
+
 int main()
 {
 	srand(1234);
 	Instance& instance = readInstance("LA20.txt");
+	Vector& vector = generateBierwirth(instance);
 
-	//Vector& vector = generateBierwirth(instance);
 	//std::cout << "BIERWITH: " << std::endl;
 	//for (int i = 0; i <	vector.size; ++i) {
 	//	std::cout << vector.V[i];
@@ -483,16 +564,16 @@ int main()
 	// std::cout << "LOCAL SEARCH COST: " << vector.cost << std::endl;
 	
 	// test grasp
-	 Vector& v = grasp(instance, 15, 2000, 1000);
-	 std::cout << "GRASP.FINALCOST = " << v.cost << std::endl;
+	Vector& v = grasp(instance, vector, 15, 100, 1000);
+	std::cout << "GRASP.FINALCOST = " << v.cost << std::endl;
+
+	
+	// Etude des resultats (LS / no LS / GRASP etc...)
+	// resultStudy(10);
 	
 	// test hashFunction
 	//std::string hash;
 	//int arr[11] ={0,1,2,2,0,3,1,2,3,3,0};
 	//hash = hashFunction(arr, 11);
 	//std::cout << hash << std::endl;
-
-	// faire varier la seed
-	// faire varier le nombre de voisins
-	// augmenter le nombre d'iter
 }
