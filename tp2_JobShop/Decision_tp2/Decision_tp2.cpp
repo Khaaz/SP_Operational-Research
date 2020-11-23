@@ -270,7 +270,7 @@ SonFather searchSonAndFather(Vector &vector, int piece, int op){
 				foundFather = true;
 			}
 		}
-		if(foundSon && vector.V[i] == piece) {
+		if(!foundSon && vector.V[i] == piece) {
 			++nbOccurrSon;
 			if(nbOccurrSon == op) {
 				iSon = i;
